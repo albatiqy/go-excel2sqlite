@@ -118,7 +118,7 @@ func main() {
 	flag.Parse()
 	// cfg := getConfig(configFile)
 
-	xlFname := "plpg_kemenag.xlsx"
+	xlFname := "data prajab.xlsx"
 
 	fInfo, err := os.Stat(xlFname)
 	if err != nil {
@@ -128,6 +128,7 @@ func main() {
 	}
 
 	baseFname := strings.TrimSuffix(fInfo.Name(), filepath.Ext(fInfo.Name()))
+	tableName := strings.ReplaceAll(baseFname, " ", "_")
 
 	xl, err := excelize.OpenFile(xlFname)
 	if err != nil {
@@ -162,7 +163,7 @@ func main() {
 		sb.WriteString(val + " TEXT NOT NULL,\n")
 	}
 
-	sqlCreateStmt := fmt.Sprintf("CREATE TABLE %s (%s)", baseFname, strings.TrimSuffix(sb.String(), ",\n"))
+	sqlCreateStmt := fmt.Sprintf("CREATE TABLE %s (%s)", tableName, strings.TrimSuffix(sb.String(), ",\n"))
 
 	_, err = db.Exec(sqlCreateStmt)
 	if err != nil {
@@ -189,7 +190,7 @@ func main() {
 	}
 	colsStr := strings.TrimSuffix("id,\n"+strings.Join(cols, ",\n"), ",\n")
 	placeHolders := strings.TrimSuffix(strings.Repeat("?,\n", len(header._names)+1), ",\n")
-	sqlInsert := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", baseFname, colsStr, placeHolders)
+	sqlInsert := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", tableName, colsStr, placeHolders)
 
 	sf := sonyflake.NewSonyflake(sonyflake.Settings{})
 
@@ -223,8 +224,22 @@ func main() {
 			log.Fatal(err)
 		}
 
+		/*
 		if len(col) < len(header._names) {
-			log.Println("break on empty rows")
+			y := len(header._names) - len(col)
+			for k := 0; k < y; k++ {
+				col = append(col, "")
+			}
+		} else {
+			if len(col) > len(header._names) {
+				log.Println("overflow rows length")
+				break
+			}
+		}
+		*/
+		
+		if len(col) > len(header._names) {
+			log.Println("overflow rows length")
 			break
 		}
 		var id uint64
